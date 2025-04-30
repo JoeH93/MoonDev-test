@@ -14,7 +14,7 @@ export default function DevApplications() {
     const fetchApplications = async () => {
       try {
         setLoading(true);
-        const { data, error } = await supabase.from('applications').select(`*`);
+        const { data, error } = await supabase.from('applications').select('*');
         if (error) throw error;
         setApplications(data || []);
       } catch (err) {
@@ -25,12 +25,33 @@ export default function DevApplications() {
     };
 
     fetchApplications();
-  }, []);
+
+    // Real-time subscription using the new channel API
+    const channel = supabase.channel('applications')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'applications' }, (payload) => {
+        setApplications((prevApplications) => [...prevApplications, payload.new]);
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'applications' }, (payload) => {
+        setApplications((prevApplications) => 
+          prevApplications.map((app) => app.id === payload.new.id ? payload.new : app)
+        );
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'applications' }, (payload) => {
+        setApplications((prevApplications) => 
+          prevApplications.filter((app) => app.id !== payload.old.id)
+        );
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel); // Clean up the subscription
+    };
+  }, []); // Empty dependency array to run only once when component mounts
 
   const onRefresh = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase.from('applications').select(`*`);
+      const { data, error } = await supabase.from('applications').select('*');
       if (error) throw error;
       setApplications(data || []);
     } catch (err) {
