@@ -17,16 +17,18 @@ export default function LoginForm() {
     setError('');
   
     try {
-      setLoading(true)
+      setLoading(true);
+      // Convert email to lowercase before sending it to Supabase
+      const lowerCaseEmail = email.toLowerCase();
+  
       // 1. Authenticate with Supabase
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: email,
+        email: lowerCaseEmail,
         password,
       });
   
       if (error) throw error;
   
-      
       if (!data.user.email_confirmed_at) {
         throw new Error('Please verify your email before logging in');
       }
@@ -35,7 +37,7 @@ export default function LoginForm() {
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('is_evaluator')
-        .eq('email', email)
+        .eq('email', lowerCaseEmail)
         .single();
   
       if (userError) throw userError;
@@ -43,15 +45,15 @@ export default function LoginForm() {
       const is_evaluator = userData.is_evaluator === true || userData.is_evaluator === 'true' || userData.is_evaluator === 1;
       // 4. Redirect based on role
       window.location.href = is_evaluator ? '/evaluator' : '/developer';
-      
-      
+  
     } catch (err) {
       setError(err.message);
       console.error('Login error:', err);
-    }finally{
-      setLoading(false)
+    } finally {
+      setLoading(false);
     }
   }
+  
 
   return (
     <div className="w-full max-w-md bg-white/5 backdrop-blur-md border border-white/10 rounded-xl p-8 shadow-xl text-white">

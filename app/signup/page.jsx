@@ -24,54 +24,56 @@ export default function Signup() {
     e.preventDefault();
     setError('');
     setLoading(true);
-
+  
     // Basic validation
     if (password !== passwordConfirmation) {
       setError('Passwords do not match');
       setLoading(false);
       return;
     }
-
+  
     if (password.length < 6) {
       setError('Password must be at least 6 characters');
       setLoading(false);
       return;
     }
-
+  
     try {
+      
+      const lowerCaseEmail = email.toLowerCase();
+  
       const { data, error } = await supabase.auth.signUp({
-        email,
+        email: lowerCaseEmail,
         password,
         options: {
           data: { full_name: fullName, phone: phoneNumber, is_evaluator: is_evaluator },
           emailRedirectTo: `${location.origin}/`,
         },
       });
-
+  
       const { dataEntry, error: insertError } = await supabase
-              .from('users')
-              .insert([{
-                full_name: fullName,
-                phone: phoneNumber,
-                email: email,
-                is_evaluator: is_evaluator,
-              }]);
-            
-
-      if (error){
-        setLoading(false)
+        .from('users')
+        .insert([{
+          full_name: fullName,
+          phone: phoneNumber,
+          email: lowerCaseEmail,
+          is_evaluator: is_evaluator,
+        }]);
+  
+      if (error) {
+        setLoading(false);
         throw error;
-      } 
-
+      }
   
     } catch (error) {
       console.error('Signup error:', error);
       setError(error.message || 'Signup failed. Please try again.');
     } finally {
       setLoading(false);
-      setSuccess(true)
+      setSuccess(true);
     }
   };
+  
 
   if (success) {
     return (
